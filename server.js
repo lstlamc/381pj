@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
 const url = require('url');
 const fs = require('fs');
 const formidable = require('formidable');
@@ -10,6 +11,122 @@ const mongourl = "mongodb://me:381lab@381-lab-shard-00-00-au1bm.azure.mongodb.ne
 const dbName = "test";
 
 app.set('view engine', 'ejs');
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.post('/api/restaurant', function (req, res) {
+    let newDoc = {};
+    let address = {};
+    var nameFound = false;
+    for (i in req.body) {
+        if (i == "address") {
+            for (a in req.body[i]) {
+                if (a == "building" || a == "street" || a == "zipcode" || a == "coord") {
+                    address[a] = req.body[i][a];
+                }
+
+            }
+        }
+        else if (i == "borough" || i == "cuisine" || i == "restaurant_id") {
+            newDoc[i] = req.body[i];
+        }
+        else if (i == "name" && req.body[i] != null) {
+            nameFound = true;
+            newDoc[i] = req.body[i];
+        }
+    }
+    newDoc['address'] = address;
+
+    var resp = {};
+    if (nameFound) {
+
+        let client = new MongoClient(mongourl);
+        client.connect((err) => {
+            try {
+                assert.equal(err, null);
+            } catch (err) {
+                resp['status'] = "Failed";
+                res.status(500).type('json').json(resp).end();
+                return (-1);
+            }
+            resp['status'] = "ok";
+            const db = client.db(dbName);
+
+            db.collection('project_restaurant').insertOne(newDoc, (err, result) => {
+                try {
+                    assert.equal(err, null);
+                } catch (err) {
+                    resp['status'] = "Failed";
+                    client.close();
+                    res.status(500).type('json').json(resp).end();
+                    return (-1);
+                }
+                client.close();
+                resp['_id'] = result.ops[0]['_id'];
+                res.status(200).type('json').json(resp).end();
+
+            });
+
+
+        });
+    } else {
+        resp['status'] = "Failed";
+        res.status(500).type('json').json(resp).end();
+    }
+});
+app.get("/api/restaurant/:type/:data", function (req, res) {
+    let search = {};
+    search[req.params.type] = req.params.data;
+
+    let client = new MongoClient(mongourl);
+    client.connect((err) => {
+        try {
+            assert.equal(err, null);
+        } catch (err) {
+            res.status(500).json({ status: "connection failed" }).end();
+            return (-1);
+        }
+        const db = client.db(dbName);
+
+        let result = [];
+        search_restaurant(db, search, (restaurant, temp) => {
+            restaurant.forEach((temp_r) => {
+                let rest = {};
+                rest['restaurant'] = JSON.stringify(temp_r);
+                result.push(rest);
+
+
+            });
+            res.status(200).json(result).end();
+
+        });
+    });
+});
+app.get("/api/restaurant", function (req, res) {
+    let search = {};
+    let client = new MongoClient(mongourl);
+    client.connect((err) => {
+        try {
+            assert.equal(err, null);
+        } catch (err) {
+            res.status(500).json({ status: "connection failed" }).end();
+            return (-1);
+        }
+        const db = client.db(dbName);
+
+        let result = [];
+        search_restaurant(db, search, (restaurant, temp) => {
+            restaurant.forEach((temp_r) => {
+                let rest = {};
+                rest['restaurant'] = JSON.stringify(temp_r);
+                result.push(rest);
+
+
+            });
+            res.status(200).json(result).end();
+
+        });
+    });
+});
 app.get("/login", function (req, res) {
     if (req.query.create == 'success')
         msg = "Create Account successful";

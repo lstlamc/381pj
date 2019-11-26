@@ -6,7 +6,8 @@
 		"mongodb": "3.1",
 		"formidable": "latest",
 		"express": "*",
-		"ejs": "*"
+		"ejs": "*",
+		"body-parser": "*"
 	},
 	"scripts": {
 		"start": "node server.js"
