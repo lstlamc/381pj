@@ -63,7 +63,7 @@ app.post('/api/restaurant', function (req, res) {
                 client.close();
                 resp['_id'] = result.ops[0]['_id'];
                 res.status(200).type('json').json(resp).end();
-
+                return;
             });
 
 
