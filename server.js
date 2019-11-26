@@ -89,6 +89,10 @@ app.get("/api/restaurant/:type/:data", function (req, res) {
 
         let result = [];
         search_restaurant(db, search, (restaurant, temp) => {
+            if (restaurant.length <= 0) {
+                res.status(200).json({}).end();
+                return;
+            }
             restaurant.forEach((temp_r) => {
                 let rest = {};
                 rest['restaurant'] = JSON.stringify(temp_r);
@@ -115,6 +119,10 @@ app.get("/api/restaurant", function (req, res) {
 
         let result = [];
         search_restaurant(db, search, (restaurant, temp) => {
+            if (restaurant.length <= 0) {
+                res.status(200).json({}).end();
+                return;
+            }
             restaurant.forEach((temp_r) => {
                 let rest = {};
                 rest['restaurant'] = JSON.stringify(temp_r);
