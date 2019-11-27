@@ -71,13 +71,14 @@
 
     <% if((restaurant[0].grades).length){%>
     <ol>
-        <%for (i in restaurant[0].grades){%>
+        <%for (i in restaurant[0].grades){
+            if(user == restaurant[0].grades[i].user){grade_create = true;}%>
         <li><%= restaurant[0].grades[i].score%>&nbsp;(<%= restaurant[0].grades[i].user%>)</li>
         <%}%>
     </ol>
     <%}%>
         <p>
-            <label class="w3-label w3-validate">Created by: </label>demo</p>
+            <label class="w3-label w3-validate">Created by: </label> <%= restaurant[0].created_by%> </p>
         <p>
             </div>
 
@@ -89,15 +90,19 @@
             <%}%>
 
     <div class="w3-container">
-        <a href="/rate?_id=<%= restaurant[0]._id%>" style="text-decoration: none">
-            <button class="w3-btn w3-section w3-teal w3-ripple">Rate</button>
+        <%if(!rate ){%>
+            <a href="/rate?_id=<%= restaurant[0]._id%>" style="text-decoration: none">
+                <button class="w3-btn w3-section w3-teal w3-ripple">Rate</button>
             </a>
+            <%}%>
+            <%if(user){%>
             <a href="/change?_id=<%= restaurant[0]._id%>" style="text-decoration: none">
                 <button class="w3-btn w3-section w3-teal w3-ripple">Edit</button>
             </a>
             <a href="/remove?_id=<%= restaurant[0]._id%>" style="text-decoration: none">
                 <button class="w3-btn w3-section w3-teal w3-ripple">Delete</button>
             </a>
+            <%}%>
             <button class="w3-btn w3-section w3-teal w3-ripple" onclick="goBack()">Go Back</button>
             </div>
 </body>
