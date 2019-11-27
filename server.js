@@ -14,14 +14,161 @@ const dbName = "test";
 app.set('view engine', 'ejs');
 
 
+
+app.use('/api/restaurant/*', bodyParser.json());
+app.use('/api/restaurant/*', bodyParser.urlencoded({ extended: true }));
+
+
+app.post('/api/restaurant', function (req, res) {
+    let newDoc = {
+        "address": {
+            "building": null,
+            "coord": [
+                null,
+                null
+            ],
+            "street": null,
+            "zipcode": null
+        },
+        "borough": null,
+        "cuisine": null,
+        "grades": [],
+        "name": null,
+        "restaurant_id": null,
+        "created_by": null
+    };
+    var nameFound = false;
+    var owner = false;
+
+    for (i in req.body) {
+        if (i == "address") {
+            for (a in req.body[i]) {
+                if (a == "building" || a == "street" || a == "zipcode" || a == "coord") {
+                    newDoc[i][a] = req.body[i][a];
+                }
+            }
+        }
+        else if (i == "borough" || i == "cuisine" || i == "restaurant_id") {
+            newDoc[i] = req.body[i];
+        }
+        else if (i == "name" && req.body[i] != null) {
+            nameFound = true;
+            newDoc[i] = req.body[i];
+        }
+        else if (i == "created_by" && req.body[i] != null) {
+            owner = true;
+            newDoc[i] = req.body[i];
+        }
+    }
+    var resp = {};
+    if (nameFound && owner) {
+        let client = new MongoClient(mongourl, { useNewUrlParser: true });
+        client.connect((err) => {
+            try {
+                assert.equal(err, null);
+            } catch (err) {
+                resp['status'] = "Failed";
+                res.status(200).type('json').json(newDoc).end();
+                return (-1);
+            }
+            const db = client.db(dbName);
+            resp['status'] = "ok";
+            db.collection('project_restaurant').insertOne(newDoc, (err, result) => {
+                try {
+                    assert.equal(err, null);
+                } catch (err) {
+                    resp['status'] = "Failed";
+                    client.close();
+                    res.status(200).type('json').json(newDoc).end();
+                    return (-1);
+                }
+                client.close();
+                resp['_id'] = newDoc['_id'];
+                res.status(200).type('json').json(resp).end();
+
+            });
+        });
+    }
+    else {
+        resp['status'] = "Failed";
+        client.close();
+        res.status(200).type('json').json(resp).end();
+    }
+
+});
+
+
+
+app.get("/api/restaurant/:type/:data", function (req, res) {
+    let search = {};
+    search[req.params.type] = req.params.data;
+
+    let client = new MongoClient(mongourl, { useNewUrlParser: true });
+    client.connect((err) => {
+        try {
+            assert.equal(err, null);
+        } catch (err) {
+            res.status(500).json({ status: "connection failed" }).end();
+            return (-1);
+        }
+        const db = client.db(dbName);
+
+        let result = [];
+        search_restaurant(db, search, (restaurant, temp) => {
+            if (restaurant.length <= 0) {
+                res.status(200).json({}).end();
+                return;
+            }
+            restaurant.forEach((temp_r) => {
+                let rest = {};
+                rest['restaurant'] = temp_r;
+                result.push(rest);
+
+
+            });
+            res.status(200).json(result).end();
+
+        });
+    });
+});
+app.get("/api/restaurant", function (req, res) {
+    let search = {};
+    let client = new MongoClient(mongourl, { useNewUrlParser: true });
+    client.connect((err) => {
+        try {
+            assert.equal(err, null);
+        } catch (err) {
+            res.status(500).json({ status: "connection failed" }).end();
+            return (-1);
+        }
+        const db = client.db(dbName);
+
+        let result = [];
+        search_restaurant(db, search, (restaurant, temp) => {
+            if (restaurant.length <= 0) {
+                res.status(200).json({}).end();
+                return;
+            }
+            restaurant.forEach((temp_r) => {
+                let rest = {};
+                rest['restaurant'] = temp_r;
+                result.push(rest);
+
+
+            });
+            res.status(200).json(result).end();
+
+        });
+    });
+});
+
+
 app.use(session({
     secret: 'admin',
     name: 'testapp',
-    maxAge: 80 * 1000
+    maxAge: 1000 * 60 * 60
 
 }));
-
-
 app.use((req, res, next) => {
     if (req.path == '/' || req.path == '/login' || req.path == '/processlogin' || req.path == '/create' || req.path == '/signup') {
         next();
@@ -422,152 +569,7 @@ app.post("/changerestaurant", function (req, res) {
 
 
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-
-app.post('/api/restaurant', function (req, res) {
-    let newDoc = {
-        "address": {
-            "building": null,
-            "coord": [
-                null,
-                null
-            ],
-            "street": null,
-            "zipcode": null
-        },
-        "borough": null,
-        "cuisine": null,
-        "grades": [],
-        "name": null,
-        "restaurant_id": null,
-        "created_by": null
-    };
-    var nameFound = false;
-    var owner = false;
-
-    for (i in req.body) {
-        if (i == "address") {
-            for (a in req.body[i]) {
-                if (a == "building" || a == "street" || a == "zipcode" || a == "coord") {
-                    newDoc[i][a] = req.body[i][a];
-                }
-            }
-        }
-        else if (i == "borough" || i == "cuisine" || i == "restaurant_id") {
-            newDoc[i] = req.body[i];
-        }
-        else if (i == "name" && req.body[i] != null) {
-            nameFound = true;
-            newDoc[i] = req.body[i];
-        }
-        else if (i == "created_by" && req.body[i] != null) {
-            owner = true;
-            newDoc[i] = req.body[i];
-        }
-    }
-    var resp = {};
-    if (nameFound && owner) {
-        let client = new MongoClient(mongourl, { useNewUrlParser: true });
-        client.connect((err) => {
-            try {
-                assert.equal(err, null);
-            } catch (err) {
-                resp['status'] = "Failed";
-                res.status(200).type('json').json(newDoc).end();
-                return (-1);
-            }
-            const db = client.db(dbName);
-            resp['status'] = "ok";
-            db.collection('project_restaurant').insertOne(newDoc, (err, result) => {
-                try {
-                    assert.equal(err, null);
-                } catch (err) {
-                    resp['status'] = "Failed";
-                    client.close();
-                    res.status(200).type('json').json(newDoc).end();
-                    return (-1);
-                }
-                client.close();
-                resp['_id'] = newDoc['_id'];
-                res.status(200).type('json').json(resp).end();
-
-            });
-        });
-    }
-    else {
-        resp['status'] = "Failed";
-        client.close();
-        res.status(200).type('json').json(resp).end();
-    }
-
-});
-
-
-
-app.get("/api/restaurant/:type/:data", function (req, res) {
-    let search = {};
-    search[req.params.type] = req.params.data;
-
-    let client = new MongoClient(mongourl, { useNewUrlParser: true });
-    client.connect((err) => {
-        try {
-            assert.equal(err, null);
-        } catch (err) {
-            res.status(500).json({ status: "connection failed" }).end();
-            return (-1);
-        }
-        const db = client.db(dbName);
-
-        let result = [];
-        search_restaurant(db, search, (restaurant, temp) => {
-            if (restaurant.length <= 0) {
-                res.status(200).json({}).end();
-                return;
-            }
-            restaurant.forEach((temp_r) => {
-                let rest = {};
-                rest['restaurant'] = JSON.stringify(temp_r);
-                result.push(rest);
-
-
-            });
-            res.status(200).json(result).end();
-
-        });
-    });
-});
-app.get("/api/restaurant", function (req, res) {
-    let search = {};
-    let client = new MongoClient(mongourl, { useNewUrlParser: true });
-    client.connect((err) => {
-        try {
-            assert.equal(err, null);
-        } catch (err) {
-            res.status(500).json({ status: "connection failed" }).end();
-            return (-1);
-        }
-        const db = client.db(dbName);
-
-        let result = [];
-        search_restaurant(db, search, (restaurant, temp) => {
-            if (restaurant.length <= 0) {
-                res.status(200).json({}).end();
-                return;
-            }
-            restaurant.forEach((temp_r) => {
-                let rest = {};
-                rest['restaurant'] = JSON.stringify(temp_r);
-                result.push(rest);
-
-
-            });
-            res.status(200).json(result).end();
-
-        });
-    });
-});
 
 
 
