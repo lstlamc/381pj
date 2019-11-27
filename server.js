@@ -367,7 +367,7 @@ app.post("/raterestaurant", function (req, res) {
         });
     }
 });
-app.post("/change", function (req, res) {
+app.post("/changerestaurant", function (req, res) {
     if (req.method.toLowerCase() == "post") {
         // parse a file upload
         const form = new formidable.IncomingForm();
