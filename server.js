@@ -23,7 +23,7 @@ app.use(session({
 
 
 app.use((req, res, next) => {
-    if (req.path == '/' || req.path == '/login' || req.path == '/processlogin' || req.path == '/create') {
+    if (req.path == '/' || req.path == '/login' || req.path == '/processlogin' || req.path == '/create' || req.path == '/signup') {
         next();
     }
     else if (req.session.user) {
