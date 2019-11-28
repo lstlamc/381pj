@@ -114,6 +114,7 @@ app.get("/api/restaurant/:type/:data", function (req, res) {
 
         let result = [];
         search_restaurant(db, search, (restaurant, temp) => {
+            client.close();
             if (restaurant.length <= 0) {
                 res.status(200).json({}).end();
                 return;
@@ -144,6 +145,7 @@ app.get("/api/restaurant", function (req, res) {
 
         let result = [];
         search_restaurant(db, search, (restaurant, temp) => {
+            client.close();
             if (restaurant.length <= 0) {
                 res.status(200).json({}).end();
                 return;
@@ -192,6 +194,7 @@ app.use((req, res, next) => {
             }
             const db = client.db(dbName);
             search_restaurant(db, req.query, (restaurant, temp) => {
+                client.close();
                 let name = false;
                 if (req.path == '/rate') {
                     for (i in restaurant[0].grades) {
@@ -209,12 +212,9 @@ app.use((req, res, next) => {
                 }
                 else {
                     if (restaurant[0].created_by == req.session.user) {
-                        client.close();
                         next();
                     }
                     else {
-                        client.close();
-
                         res.render('error', { msg: "You dont' have right to do so", id: req.query._id });
                     }
                 }
@@ -262,6 +262,7 @@ app.get("/change", function (req, res) {
         const db = client.db(dbName);
 
         search_restaurant(db, req.query, (restaurant, temp) => {
+            client.close();
             res.render("change", { restaurant: restaurant });
 
         });
@@ -371,6 +372,7 @@ app.get("/display", function (req, res) {
         const db = client.db(dbName);
 
         search_restaurant(db, req.query, (restaurant, temp) => {
+            client.close();
             if (restaurant[0].created_by == req.session.user) {
                 var user = true;
             }
@@ -409,6 +411,7 @@ app.post("/processlogin", function (req, res) {
             // new_r['password'] = password;
 
             checkLogin(db, fields, (user) => {
+                client.close();
                 if (user.length > 0) {
                     req.session.user = fields.userid;
                     res.redirect('read');
@@ -643,7 +646,7 @@ const updateRestaurant = (db, criteria, callback) => {
     let temp = {};
     temp['_id'] = ObjectID(criteria._id);
     delete criteria._id;
-    db.collection('project_restaurant').update(temp, { $set: criteria },
+    db.collection('project_restaurant').updateOne(temp, { $set: criteria },
         (err, result) => {
             assert.equal(err, null);
             callback()
