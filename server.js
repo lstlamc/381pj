@@ -1,6 +1,5 @@
 const express = require('express');
 const app = express();
-const url = require('url');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const session = require('cookie-session');
@@ -322,12 +321,12 @@ app.post("/signup", function (req, res) {
         // parse a file upload
         const form = new formidable.IncomingForm();
         form.parse(req, (err, fields) => {
-            if (fields.name && fields.name.length > 0) {
-                name = fields.name;
-            }
-            if (fields.password && fields.password.length > 0) {
-                password = fields.password;
-            }
+            // if (fields.name && fields.name.length > 0) {
+            //     name = fields.name;
+            // }
+            // if (fields.password && fields.password.length > 0) {
+            //     password = fields.password;
+            // }
 
             let client = new MongoClient(mongourl, { useNewUrlParser: true });
             client.connect((err) => {
@@ -339,12 +338,9 @@ app.post("/signup", function (req, res) {
                     return (-1);
                 }
                 const db = client.db(dbName);
-                let new_r = {};
-                new_r['userid'] = name;
-                new_r['password'] = password;
-                checkUser(db, new_r, (user) => {
+                checkUser(db, fields, (user) => {
                     if (user.length <= 0) {
-                        createAccount(db, new_r, () => {
+                        createAccount(db, fields, () => {
                             client.close();
                             res.redirect('/login?create=success');
 
@@ -392,12 +388,12 @@ app.get("/display", function (req, res) {
 app.post("/processlogin", function (req, res) {
     const form = new formidable.IncomingForm();
     form.parse(req, (err, fields) => {
-        if (fields.name && fields.name.length > 0) {
-            name = fields.name;
-        }
-        if (fields.password && fields.password.length > 0) {
-            password = fields.password;
-        }
+        // if (fields.name && fields.name.length > 0) {
+        //     name = fields.name;
+        // }
+        // if (fields.password && fields.password.length > 0) {
+        //     password = fields.password;
+        // }
         let client = new MongoClient(mongourl, { useNewUrlParser: true });
         client.connect((err) => {
             try {
@@ -408,13 +404,13 @@ app.post("/processlogin", function (req, res) {
                 return (-1);
             }
             const db = client.db(dbName);
-            let new_r = {};
-            new_r['userid'] = name;
-            new_r['password'] = password;
-            checkLogin(db, new_r, (user) => {
+            // let new_r = {};
+            // new_r['userid'] = name;
+            // new_r['password'] = password;
+
+            checkLogin(db, fields, (user) => {
                 if (user.length > 0) {
-                    req.session.user = name;
-                    req.session.userPW = password;
+                    req.session.user = fields.userid;
                     res.redirect('read');
 
                 }
