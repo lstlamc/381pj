@@ -14,8 +14,8 @@ app.set('view engine', 'ejs');
 
 
 
-app.use('/api/restaurant/*', bodyParser.json());
-app.use('/api/restaurant/*', bodyParser.urlencoded({ extended: true }));
+app.use('/api/*', bodyParser.json());
+app.use('/api/*', bodyParser.urlencoded({ extended: true }));
 
 
 app.post('/api/restaurant', function (req, res) {
