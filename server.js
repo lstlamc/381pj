@@ -60,8 +60,8 @@ app.post('/api/restaurant', function (req, res) {
         }
     }
     var resp = {};
+    let client = new MongoClient(mongourl, { useNewUrlParser: true });
     if (nameFound && owner) {
-        let client = new MongoClient(mongourl, { useNewUrlParser: true });
         client.connect((err) => {
             try {
                 assert.equal(err, null);
