@@ -112,6 +112,8 @@ app.get("/api/restaurant/:type/:data", function (req, res) {
 
     } else if (req.params.type == "score") {
         search["grades.score"] = req.params.data;
+    } else if (req.params.type == "user") {
+        search["grades.user"] = req.params.data;
     } else {
         search[req.params.type] = req.params.data;
     }
