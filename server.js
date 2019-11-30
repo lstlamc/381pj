@@ -1,3 +1,4 @@
+
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -34,7 +35,7 @@ app.post('/api/restaurant', function (req, res) {
         "grades": [],
         "name": null,
         "restaurant_id": null,
-        "created_by": null
+        "owner": null
     };
     var nameFound = false;
     var owner = false;
@@ -54,7 +55,7 @@ app.post('/api/restaurant', function (req, res) {
             nameFound = true;
             newDoc[i] = req.body[i];
         }
-        else if (i == "created_by" && req.body[i] != null) {
+        else if (i == "owner" && req.body[i] != null) {
             owner = true;
             newDoc[i] = req.body[i];
         }
@@ -100,7 +101,20 @@ app.post('/api/restaurant', function (req, res) {
 
 app.get("/api/restaurant/:type/:data", function (req, res) {
     let search = {};
-    search[req.params.type] = req.params.data;
+    if (req.params.type == "building" || req.params.type == "street" || req.params.type == "zipcode") {
+        search["address." + req.params.type] = req.params.data;
+    } else if (req.params.type == "lat") {
+        search["address.coord.0"] = req.params.data;
+
+    }
+    else if (req.params.type == "lon") {
+        search["address.coord.1"] = req.params.data;
+
+    } else if (req.params.type == "score") {
+        search["grades.score"] = req.params.data;
+    } else {
+        search[req.params.type] = req.params.data;
+    }
 
     let client = new MongoClient(mongourl, { useNewUrlParser: true });
     client.connect((err) => {
@@ -211,7 +225,7 @@ app.use((req, res, next) => {
                     }
                 }
                 else {
-                    if (restaurant[0].created_by == req.session.user) {
+                    if (restaurant[0].owner == req.session.user) {
                         next();
                     }
                     else {
@@ -373,7 +387,7 @@ app.get("/display", function (req, res) {
 
         search_restaurant(db, req.query, (restaurant, temp) => {
             client.close();
-            if (restaurant[0].created_by == req.session.user) {
+            if (restaurant[0].owner == req.session.user) {
                 var user = true;
             }
             for (i in restaurant[0].grades) {
@@ -446,7 +460,8 @@ app.post("/createRestaurant", function (req, res) {
                 }
                 else if (i == "lon" || i == "lat") {
                     coord.push(fields[i]);
-                } else if (i == 'sampleFile') { }
+                } else if (i == 'sampleFile') {
+                }
                 else {
                     new_r[i] = fields[i];
                 }
@@ -454,30 +469,31 @@ app.post("/createRestaurant", function (req, res) {
             new_r['address'] = address;
             new_r['address']['coord'] = coord;
             new_r['grades'] = [];
-            new_r['created_by'] = req.session.user;
-            if (files.sampleFile.type) {
-                mimetype = files.sampleFile.type;
+            new_r['owner'] = req.session.user;
+            if (files.sampleFile.size != 0 && (files.sampleFile.mimetype === "image/jpeg" || files.sampleFile.mimetype === "image/png" || files.sampleFile.mimetype === "image/jpg")) {
+                new_r['mimetype'] == photo.mimetype;
             }
-            new_r['mimetype'] = mimetype;
+
+
             fs.readFile(files.sampleFile.path, (err, data) => {
                 new_r['image'] = new Buffer.from(data).toString('base64');
-                let client = new MongoClient(mongourl, { useNewUrlParser: true });
-                client.connect((err) => {
-                    try {
-                        assert.equal(err, null);
-                    } catch (err) {
-                        res.writeHead(500, { "Content-Type": "text/plain" });
-                        res.end("MongoClient connect() failed!");
-                        return (-1);
-                    }
-                    const db = client.db(dbName);
+            });
+            let client = new MongoClient(mongourl, { useNewUrlParser: true });
+            client.connect((err) => {
+                try {
+                    assert.equal(err, null);
+                } catch (err) {
+                    res.writeHead(500, { "Content-Type": "text/plain" });
+                    res.end("MongoClient connect() failed!");
+                    return (-1);
+                }
+                const db = client.db(dbName);
 
-                    insertRestaurant(db, new_r, (restaurant) => {
-                        client.close()
-                        res.redirect('display?_id=' + restaurant['_id'])
-                    });
-
+                insertRestaurant(db, new_r, (restaurant) => {
+                    client.close()
+                    res.redirect('display?_id=' + restaurant['_id'])
                 });
+
             });
         });
     }
